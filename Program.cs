@@ -1,18 +1,29 @@
-﻿using SendGrid;
+﻿using System.Reflection;
+using Microsoft.Extensions.Configuration;
+using SendGrid;
 using SendGrid.Helpers.Mail;
 
-var apiKey = Environment.GetEnvironmentVariable("SendGridApiKey");
-var fromEmailAddress = Environment.GetEnvironmentVariable("FromEmailAddress");
-var fromName = Environment.GetEnvironmentVariable("FromName");
-var toEmailAddress = Environment.GetEnvironmentVariable("ToEmailAddress");
-var toName = Environment.GetEnvironmentVariable("ToName");
+IConfiguration config = new ConfigurationBuilder()
+	.AddJsonFile("appsettings.json", optional: true, reloadOnChange: false)
+	.AddUserSecrets(Assembly.GetExecutingAssembly(), optional: true, reloadOnChange: false)
+	.AddEnvironmentVariables()
+	.AddCommandLine(args)
+	.Build();
+
+var apiKey = config["SendGrid:ApiKey"];
+var fromEmailAddress = config["Email:FromEmailAddress"];
+var fromName = config["Email:FromName"];
+var toEmailAddress = config["Email:ToEmailAddress"];
+var toName = config["Email:ToName"];
+var emailSubject = config["Email:Subject"];
+var emailBody = config["Email:Body"];
 
 var client = new SendGridClient(apiKey);
-var message = new SendGridMessage()
+var message = new SendGridMessage
 {
 	From = new EmailAddress(fromEmailAddress, fromName),
-	Subject = "Sending with Twilio SendGrid is Fun",
-	PlainTextContent = "and easy to do anywhere, especially with C#"
+	Subject = emailSubject,
+	PlainTextContent = emailBody
 };
 message.AddTo(new EmailAddress(toEmailAddress, toName));
 var response = await client.SendEmailAsync(message);
