@@ -3,34 +3,35 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using SendGrid;
+using SendGrid.Extensions.DependencyInjection;
 using SendGrid.Helpers.Mail;
 
 using IHost host = Host.CreateDefaultBuilder(args)
     .ConfigureServices((context, services) =>
     {
+        services.AddSendGrid(options =>
+            options.ApiKey = context.Configuration["SendGrid:ApiKey"]
+        );
         services.Configure<EmailOptions>(context.Configuration.GetSection("Email"));
         services.AddTransient<EmailSender>();
     })
     .Build();
 
-var config = host.Services.GetRequiredService<IConfiguration>();
-
-var apiKey = config["SendGrid:ApiKey"];
-var client = new SendGridClient(apiKey);
-
 var emailSender = host.Services.GetRequiredService<EmailSender>();
-await emailSender.SendEmail(client);
+await emailSender.SendEmail();
 
 public class EmailSender
 {
+    private readonly ISendGridClient sendGridClient;
     private readonly EmailOptions emailOptions;
 
-    public EmailSender(IOptions<EmailOptions> emailOptions)
+    public EmailSender(IOptions<EmailOptions> emailOptions, ISendGridClient sendGridClient)
     {
+        this.sendGridClient = sendGridClient;
         this.emailOptions = emailOptions.Value;
     }
 
-    public async Task SendEmail(ISendGridClient client)
+    public async Task SendEmail()
     {
         var message = new SendGridMessage
         {
@@ -39,7 +40,7 @@ public class EmailSender
             PlainTextContent = emailOptions.Body
         };
         message.AddTo(emailOptions.To);
-        var response = await client.SendEmailAsync(message);
+        var response = await sendGridClient.SendEmailAsync(message);
 
         // A success status code means SendGrid received the email request and will process it.
         // Errors can still occur when SendGrid tries to send the email. 
