@@ -11,24 +11,28 @@ IConfiguration config = new ConfigurationBuilder()
     .Build();
 
 var apiKey = config["SendGrid:ApiKey"];
-var fromEmailAddress = config["Email:From:Email"];
-var fromName = config["Email:From:Name"];
-var toEmailAddress = config["Email:To:Email"];
-var toName = config["Email:To:Name"];
-var emailSubject = config["Email:Subject"];
-var emailBody = config["Email:Body"];
+
+var emailOptions = config.GetSection("Email").Get<EmailOptions>();
 
 var client = new SendGridClient(apiKey);
 var message = new SendGridMessage
 {
-    From = new EmailAddress(fromEmailAddress, fromName),
-    Subject = emailSubject,
-    PlainTextContent = emailBody
+    From = emailOptions.From,
+    Subject = emailOptions.Subject,
+    PlainTextContent = emailOptions.Body
 };
-message.AddTo(new EmailAddress(toEmailAddress, toName));
+message.AddTo(emailOptions.To);
 var response = await client.SendEmailAsync(message);
 
 // A success status code means SendGrid received the email request and will process it.
 // Errors can still occur when SendGrid tries to send the email. 
 // If email is not received, use this URL to debug: https://app.sendgrid.com/email_activity 
 Console.WriteLine(response.IsSuccessStatusCode ? "Email queued successfully!" : "Something went wrong!");
+
+public class EmailOptions
+{
+    public EmailAddress From { get; set; }
+    public EmailAddress To { get; set; }
+    public string Subject { get; set; }
+    public string Body { get; set; }
+}
