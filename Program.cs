@@ -1,14 +1,11 @@
-﻿using System.Reflection;
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using SendGrid;
 using SendGrid.Helpers.Mail;
 
-IConfiguration config = new ConfigurationBuilder()
-    .AddJsonFile("appsettings.json", optional: true, reloadOnChange: false)
-    .AddUserSecrets(Assembly.GetExecutingAssembly(), optional: true, reloadOnChange: false)
-    .AddEnvironmentVariables()
-    .AddCommandLine(args)
-    .Build();
+using IHost host = Host.CreateDefaultBuilder(args).Build();
+var config = host.Services.GetRequiredService<IConfiguration>();
 
 var apiKey = config["SendGrid:ApiKey"];
 
